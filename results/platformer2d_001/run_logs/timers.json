@@ -1,0 +1,47 @@
+{
+    "name": "root",
+    "metadata": {
+        "timer_format_version": "0.1.0",
+        "start_time_seconds": "1764177887",
+        "python_version": "3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]",
+        "command_line_arguments": "C:\\Users\\blake\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\mlagents-learn trainer_config.yaml --run-id=platformer2d_001",
+        "mlagents_version": "1.1.0",
+        "mlagents_envs_version": "1.1.0",
+        "communication_protocol_version": "1.5.0",
+        "pytorch_version": "2.9.1+cpu",
+        "numpy_version": "1.23.5",
+        "end_time_seconds": "1764177937"
+    },
+    "total": 49.64701829999103,
+    "count": 1,
+    "self": 0.004000999993877485,
+    "children": {
+        "run_training.setup": {
+            "total": 0.0932602999964729,
+            "count": 1,
+            "self": 0.0932602999964729
+        },
+        "TrainerController.start_learning": {
+            "total": 49.54975700000068,
+            "count": 1,
+            "self": 0.00031529998523183167,
+            "children": {
+                "TrainerController._reset_env": {
+                    "total": 49.54943300000741,
+                    "count": 1,
+                    "self": 49.54943300000741
+                },
+                "trainer_threads": {
+                    "total": 9.00006853044033e-07,
+                    "count": 1,
+                    "self": 9.00006853044033e-07
+                },
+                "TrainerController._save_models": {
+                    "total": 7.800001185387373e-06,
+                    "count": 1,
+                    "self": 7.800001185387373e-06
+                }
+            }
+        }
+    }
+}
