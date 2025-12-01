@@ -97,3 +97,17 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Editor/project user settings
+.vscode/
+.idea/
+
+# ML-Agents training artifacts and logs
+/results/
+/Logs/
+*.onnx
+*.pt
+*.tfevents*
+# Explicitly track the curated model
+!platformer.onnx
+!platformer.onyx

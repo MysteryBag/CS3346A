@@ -9,3 +9,9 @@ pip install mlagents
 
 Before hitting play do mlagents-learn trainer_config.yaml --run-id=platformer2d_001 
 Change the run-ID each time as the run will save as a file and keeping the name will overwrite the file
+
+## Live training dashboard
+- Start training as usual with `mlagents-learn trainer_config.yaml --run-id=<your_run>`.
+- In another terminal from the repo root run `python monitor/dashboard_server.py --results-dir results --port 8000`.
+- Open http://127.0.0.1:8000 to see live reward/episode stats; choose the run and behavior in the dropdowns.
+- If you see an error about tensorboard not being installed, add it with `pip install tensorboard`.

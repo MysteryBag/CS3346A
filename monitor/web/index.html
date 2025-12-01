@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML-Agents Live Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,0.04);
+      --panel-strong: rgba(255,255,255,0.08);
+      --card: #f8fafc;
+      --card-border: #dce5f3;
+      --text: #e8edf5;
+      --muted: #8fa0bf;
+      --muted-dark: #556070;
+      --accent: #38bdf8;
+      --accent-2: #f97316;
+      --accent-3: #22c55e;
+      --accent-4: #f43f5e;
+      --border: rgba(255,255,255,0.12);
+      --shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      background: radial-gradient(120% 120% at 20% 20%, rgba(56,189,248,0.08), transparent 40%),
+                  radial-gradient(100% 100% at 80% 10%, rgba(244,63,94,0.08), transparent 30%),
+                  radial-gradient(120% 120% at 50% 80%, rgba(34,197,94,0.06), transparent 35%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .title {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      font-size: clamp(24px, 4vw, 32px);
+    }
+    .subtitle {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 14px;
+    }
+    .badge {
+      background: linear-gradient(120deg, rgba(56,189,248,0.25), rgba(244,63,94,0.2));
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: var(--shadow);
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+    select, input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel-strong);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    .button {
+      background: linear-gradient(120deg, #38bdf8, #22c55e);
+      color: #04111f;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+    .button.secondary {
+      background: var(--panel-strong);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .button:active { transform: translateY(1px); box-shadow: none; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .chip {
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: var(--panel-strong);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 120ms ease;
+      font-size: 13px;
+    }
+    .chip.active {
+      background: rgba(56,189,248,0.22);
+      border-color: rgba(56,189,248,0.5);
+      color: #e0f6ff;
+    }
+    .charts {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 16px 18px 16px;
+      min-height: 280px;
+      height: 340px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .chart-note {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted-dark);
+      background: rgba(255,255,255,0.65);
+      border: 1px solid #000000;
+      border-radius: 10px;
+      padding: 6px 8px;
+    }
+    canvas {
+      width: 100% !important;
+      flex: 1 1 auto;
+      min-height: 180px;
+    }
+    .chart-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #edf3ff;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    @media (max-width: 720px) {
+      body { padding: 16px; }
+      .controls { grid-template-columns: 1fr; }
+      .charts { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="title">Live Training Monitor</div>
+      <div class="subtitle">Track reward, stability, and policy health while ML-Agents trains.</div>
+    </div>
+    <div class="badge" id="statusBadge">Idle</div>
+  </header>
+
+  <div class="panel" style="margin-bottom: 12px;">
+    <div class="controls">
+      <div>
+        <label for="runSelect">Run</label>
+        <select id="runSelect"></select>
+      </div>
+      <div>
+        <label for="behaviorSelect">Behavior</label>
+        <select id="behaviorSelect"></select>
+      </div>
+      <div>
+        <label for="intervalInput">Refresh (seconds)</label>
+        <input type="number" id="intervalInput" value="5" min="1" max="120" />
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="button" id="refreshBtn" style="flex:1;">Refresh now</button>
+        <button class="button secondary" id="autoBtn" style="flex:1;">Auto: On</button>
+      </div>
+    </div>
+    <div class="chips" id="tagChips"></div>
+    <div class="status" id="runMeta"></div>
+  </div>
+
+  <div class="charts" id="charts"></div>
+
+  <script>
+    const runSelect = document.getElementById("runSelect");
+    const behaviorSelect = document.getElementById("behaviorSelect");
+    const intervalInput = document.getElementById("intervalInput");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const autoBtn = document.getElementById("autoBtn");
+    const chartsContainer = document.getElementById("charts");
+    const tagChips = document.getElementById("tagChips");
+    const statusBadge = document.getElementById("statusBadge");
+    const runMeta = document.getElementById("runMeta");
+
+    let availableTags = [];
+    let runData = [];
+    const highlightedTags = [
+      "Environment/Cumulative Reward",
+      "Environment/Episode Length",
+      "Policy/Loss",
+      "Policy/Entropy",
+      "Losses/Value Loss"
+    ];
+    let selectedTags = new Set();
+    let charts = {};
+    let autoTimer = null;
+
+    const palette = [
+      "#0f172a", // dark ink line
+      "#0f172a",
+      "#0f172a",
+      "#0f172a",
+      "#0f172a",
+    ];
+
+    function quantile(sortedValues, q) {
+      const n = sortedValues.length;
+      if (n === 0) return 0;
+      const pos = (n - 1) * q;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      if (sortedValues[base + 1] !== undefined) {
+        return sortedValues[base] + rest * (sortedValues[base + 1] - sortedValues[base]);
+      }
+      return sortedValues[base];
+    }
+
+    function calcRange(values) {
+      const finite = values.filter(Number.isFinite).sort((a, b) => a - b);
+      if (!finite.length) return { min: -1, max: 1 };
+      const lo = quantile(finite, 0.05);
+      const hi = quantile(finite, 0.95);
+      const span = Math.max(hi - lo, 1e-3);
+      const pad = span * 0.1;
+      return { min: lo - pad, max: hi + pad };
+    }
+
+    function describeTag(tag) {
+      const map = {
+        "Environment/Cumulative Reward": "Line: average total reward per episode (up = better learning, down = worse). Fill shows recent reward band.",
+        "Environment/Episode Length": "Line: steps per episode (down = faster success or earlier failure; big spikes = slow/failed episodes). Fill shows recent spread.",
+        "Policy/Loss": "Line: policy loss (down and stable = converging; rising spikes = instability). Fill shows recent loss variance.",
+        "Policy/Entropy": "Line: exploration entropy (starts high, should trend down as policy commits; rising again can mean dithering). Fill shows recent entropy variance.",
+        "Losses/Value Loss": "Line: critic loss (down/stable = better value estimates; spikes = critic struggling). Fill shows recent critic loss spread.",
+      };
+      return map[tag] || "Scalar from training logs for this behavior.";
+    }
+
+    function cleanValues(values) {
+      return values
+        .map(v => Number.isFinite(v) ? v : null)
+        .filter(v => v !== null);
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || res.statusText);
+      }
+      return res.json();
+    }
+
+    function setStatus(text, tone = "info") {
+      statusBadge.textContent = text;
+      const colors = {
+        info: "linear-gradient(120deg, rgba(56,189,248,0.25), rgba(34,197,94,0.2))",
+        warn: "linear-gradient(120deg, rgba(250,204,21,0.35), rgba(249,115,22,0.25))",
+        error: "linear-gradient(120deg, rgba(244,63,94,0.35), rgba(248,113,113,0.25))",
+      };
+      statusBadge.style.background = colors[tone] || colors.info;
+    }
+
+    function fmtTime(sec) {
+      const dt = new Date(sec * 1000);
+      return dt.toLocaleString();
+    }
+
+    function renderChips(tags) {
+      availableTags = tags;
+      if (!tags.length) {
+        tagChips.innerHTML = "<span style='color:var(--muted)'>No scalar tags found yet.</span>";
+        return;
+      }
+      // default selection
+      if (!selectedTags.size) {
+        highlightedTags.forEach(tag => { if (tags.includes(tag)) selectedTags.add(tag); });
+        if (!selectedTags.size) selectedTags = new Set(tags.slice(0, Math.min(4, tags.length)));
+      }
+      tagChips.innerHTML = "";
+      tags.forEach(tag => {
+        const chip = document.createElement("div");
+        chip.className = "chip" + (selectedTags.has(tag) ? " active" : "");
+        chip.textContent = tag;
+        chip.onclick = () => {
+          if (selectedTags.has(tag)) {
+            selectedTags.delete(tag);
+          } else {
+            selectedTags.add(tag);
+          }
+          chip.classList.toggle("active");
+          drawCharts(latestMetrics);
+        };
+        tagChips.appendChild(chip);
+      });
+    }
+
+    let latestMetrics = null;
+
+    function upsertChart(tag, points) {
+      if (!points || !points.length) {
+        return;
+      }
+      const labels = points.map(p => p.step);
+      const values = cleanValues(points.map(p => p.value));
+      const color = palette[Object.keys(charts).indexOf(tag) % palette.length];
+      const range = calcRange(values);
+      const areaPattern = (() => {
+        const p = document.createElement("canvas");
+        p.width = 8;
+        p.height = 8;
+        const ctx = p.getContext("2d");
+        ctx.fillStyle = "rgba(239,68,68,0.08)"; // light red fill
+        ctx.fillRect(0, 0, 8, 8);
+        ctx.strokeStyle = "rgba(239,68,68,0.25)"; // subtle red stripe
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 8);
+        ctx.lineTo(8, 0);
+        ctx.stroke();
+        return ctx.createPattern(p, "repeat");
+      })();
+
+      if (charts[tag]) {
+        charts[tag].data.labels = labels;
+        charts[tag].data.datasets[0].data = values;
+        charts[tag].options.scales.y.min = range.min;
+        charts[tag].options.scales.y.max = range.max;
+        charts[tag].update("none");
+        return;
+      }
+
+      const card = document.createElement("div");
+      card.className = "chart-card";
+      const title = document.createElement("div");
+      title.className = "chart-title";
+      title.innerHTML = `<span>${tag}</span><span>latest: ${values[values.length - 1].toFixed(3)}</span>`;
+      const canvas = document.createElement("canvas");
+      card.appendChild(title);
+      card.appendChild(canvas);
+      const note = document.createElement("div");
+      note.className = "chart-note";
+      note.textContent = describeTag(tag);
+      card.appendChild(note);
+      chartsContainer.appendChild(card);
+
+      const ctx = canvas.getContext("2d");
+      charts[tag] = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: tag,
+            data: values,
+            borderColor: color,
+            backgroundColor: areaPattern,
+            tension: 0.2,
+            borderWidth: 3.2,
+            pointRadius: 0,
+            fill: true,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { top: 8, right: 8, bottom: 18, left: 8 } },
+          animation: false,
+          scales: {
+            x: {
+              ticks: { color: "#334155", maxTicksLimit: 6 },
+              grid: { color: "rgba(15,23,42,0.08)" }
+            },
+            y: {
+              ticks: { color: "#334155" },
+              grid: { color: "rgba(15,23,42,0.08)" },
+              min: range.min,
+              max: range.max,
+            },
+          },
+          plugins: {
+            legend: { display: false },
+          },
+        },
+      });
+    }
+
+    function drawCharts(metrics) {
+      latestMetrics = metrics;
+      chartsContainer.innerHTML = "";
+      charts = {};
+      if (!metrics || !metrics.tags?.length) {
+        chartsContainer.innerHTML = "<div style='color:var(--muted); padding:16px;'>No metrics yet. Start training to see live data.</div>";
+        return;
+      }
+      const activeTags = metrics.tags.filter(t => selectedTags.has(t));
+      if (!activeTags.length) {
+        chartsContainer.innerHTML = "<div style='color:var(--muted); padding:16px;'>Select at least one metric above.</div>";
+        return;
+      }
+      activeTags.forEach(tag => upsertChart(tag, metrics.data[tag]));
+    }
+
+    async function loadRuns() {
+      setStatus("Loading runs...");
+      try {
+        const { runs } = await fetchJson("/api/runs");
+        runData = runs || [];
+        if (!runData.length) {
+          setStatus("No runs found", "warn");
+          runSelect.innerHTML = "";
+          behaviorSelect.innerHTML = "";
+          return;
+        }
+        runSelect.innerHTML = runData
+          .map(r => `<option value="${r.id}">${r.id}</option>`)
+          .join("");
+        const latest = runData[runData.length - 1];
+        runSelect.value = latest.id;
+        populateBehaviors(latest);
+        await loadMetrics();
+        setStatus("Live");
+      } catch (err) {
+        console.error(err);
+        setStatus("Error loading runs", "error");
+      }
+    }
+
+    function populateBehaviors(run) {
+      if (!run) {
+        behaviorSelect.innerHTML = "";
+        return;
+      }
+      behaviorSelect.innerHTML = (run.behaviors || [])
+        .map(b => `<option value="${b.name}">${b.name}</option>`)
+        .join("");
+      if (run.behaviors?.length) {
+        behaviorSelect.value = run.behaviors[0].name;
+      }
+    }
+
+    async function loadMetrics() {
+      const run = runSelect.value;
+      const behavior = behaviorSelect.value;
+      if (!run || !behavior) return;
+      try {
+        const limit = 400;
+        setStatus("Updating...");
+        const data = await fetchJson(`/api/metrics?run=${encodeURIComponent(run)}&behavior=${encodeURIComponent(behavior)}&limit=${limit}`);
+        renderChips(data.tags || []);
+        drawCharts(data);
+        const lastTag = data.tags.find(t => data.data[t]?.length);
+        const lastStep = lastTag ? data.data[lastTag].slice(-1)[0].step : "-";
+        runMeta.textContent = `Run ${data.run} ? Behavior ${data.behavior} ? Last step ${lastStep}`;
+        setStatus("Live");
+      } catch (err) {
+        console.error(err);
+        setStatus("Error fetching metrics", "error");
+      }
+    }
+
+    function toggleAuto() {
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+        autoBtn.textContent = "Auto: Off";
+        return;
+      }
+      const intervalSec = Math.max(1, Number(intervalInput.value) || 5);
+      autoBtn.textContent = "Auto: On";
+      autoTimer = setInterval(loadMetrics, intervalSec * 1000);
+    }
+
+    runSelect.onchange = () => {
+      const selected = runData.find(r => r.id === runSelect.value);
+      populateBehaviors(selected);
+      loadMetrics();
+    };
+    behaviorSelect.onchange = loadMetrics;
+    refreshBtn.onclick = loadMetrics;
+    autoBtn.onclick = toggleAuto;
+
+    loadRuns();
+    toggleAuto(); // start auto-refresh by default
+  </script>
+</body>
+</html>
