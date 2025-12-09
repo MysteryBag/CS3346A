@@ -330,6 +330,10 @@ PrefabInstance:
       propertyPath: fallOffsetFromSpawn
       value: -4
       objectReference: {fileID: 0}
+    - target: {fileID: 8354561278598972262, guid: 23b9036c919cac64daf4b6a792899bc4, type: 3}
+      propertyPath: obstacleLayers.m_Bits
+      value: 4294967295
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

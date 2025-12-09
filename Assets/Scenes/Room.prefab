@@ -511,33 +511,26 @@ MonoBehaviour:
   directionRewardScale: 0.03
   directionAwayPenaltyScale: 0.015
   goalTimeDecayRate: 0.03
-  farDistancePenalty: 0.002
-  farDistanceThreshold: 10
-  landingReward: 0.1
-  slideRewardPerStep: 0.02
-  slideSpeedThreshold: 5
   survivalRewardPerSecond: 0.02
+  landingReward: 0.1
   noGoalPenaltyPerSecond: 0.02
   idlePenaltyPerSecond: 0.02
   idleSpeedThreshold: 0.25
   timePenaltyPerSecond: 0.03
-  alternateStartSides: 0
-  testingMode: 0
   agentRenderer: {fileID: 0}
   goalRenderer: {fileID: 0}
   goalCollectedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  alternateStartSides: 1
+  testingMode: 0
   spawnJitter: {x: 0.5, y: 0.1}
   goalPositionJitter: {x: 0.75, y: 0.5}
-  goalDistanceX: {x: 3, y: 8}
-  goalOffsetY: {x: -0.5, y: 1.5}
   fallOffsetFromSpawn: -4
   maxEpisodeTime: 30
   timeoutPenalty: -2
-  timeBonusPerGoal: 0
   rayLength: 6
   obstacleLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4294967295
 --- !u!114 &3340883757693805730
 MonoBehaviour:
   m_ObjectHideFlags: 0

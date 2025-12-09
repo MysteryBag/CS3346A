@@ -11,18 +11,19 @@
   <style>
     :root {
       --bg: #0b1220;
-      --panel: rgba(255,255,255,0.04);
-      --panel-strong: rgba(255,255,255,0.08);
-      --card: #f8fafc;
-      --card-border: #dce5f3;
-      --text: #e8edf5;
-      --muted: #8fa0bf;
-      --muted-dark: #556070;
+      --panel: rgba(255,255,255,0.05);
+      --panel-strong: rgba(255,255,255,0.1);
+      --card: #f9fafb;
+      --card-border: #d8e1ef;
+      --text: #eaf1ff;
+      --muted: #9fb0cd;
+      --muted-dark: #4b5563;
       --accent: #38bdf8;
       --accent-2: #f97316;
       --accent-3: #22c55e;
       --accent-4: #f43f5e;
-      --border: rgba(255,255,255,0.12);
+      --accent-5: #a855f7;
+      --border: rgba(255,255,255,0.14);
       --shadow: 0 20px 60px rgba(0,0,0,0.45);
     }
     * { box-sizing: border-box; }
@@ -55,7 +56,7 @@
       font-size: 14px;
     }
     .badge {
-      background: linear-gradient(120deg, rgba(56,189,248,0.25), rgba(244,63,94,0.2));
+      background: linear-gradient(120deg, rgba(56,189,248,0.25), rgba(244,63,94,0.22));
       border: 1px solid var(--border);
       color: var(--text);
       padding: 8px 12px;
@@ -106,9 +107,9 @@
       transition: transform 120ms ease, box-shadow 120ms ease;
     }
     .button.secondary {
-      background: var(--panel-strong);
-      color: var(--text);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.82);
+      color: #0f172a;
+      border: 1px solid var(--card-border);
     }
     .button:active { transform: translateY(1px); box-shadow: none; }
     .chips {
@@ -120,31 +121,31 @@
     .chip {
       padding: 8px 12px;
       border-radius: 12px;
-      background: var(--panel-strong);
-      border: 1px solid var(--border);
-      color: var(--text);
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--card-border);
+      color: #0f172a;
       cursor: pointer;
       transition: background 120ms ease;
       font-size: 13px;
     }
     .chip.active {
-      background: rgba(56,189,248,0.22);
-      border-color: rgba(56,189,248,0.5);
-      color: #e0f6ff;
+      background: rgba(56,189,248,0.2);
+      border-color: rgba(56,189,248,0.6);
+      color: #0b1220;
     }
     .charts {
       margin-top: 14px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 20px;
     }
     .chart-card {
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 16px;
       padding: 14px 16px 18px 16px;
-      min-height: 280px;
-      height: 340px;
+      min-height: 360px;
+      height: 420px;
       box-shadow: var(--shadow);
       display: flex;
       flex-direction: column;
@@ -168,9 +169,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: #edf3ff;
+      color: #0f172a;
       font-size: 13px;
       margin-bottom: 6px;
+      font-weight: 700;
     }
     .status {
       color: var(--muted);
@@ -216,6 +218,12 @@
     <div class="status" id="runMeta"></div>
   </div>
 
+  <div class="panel" style="margin-bottom: 12px;">
+    <div class="chart-title" style="color: var(--text); font-weight: 700; margin-bottom: 8px;">Analysis</div>
+    <div id="analysisCards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;"></div>
+    <div id="analysisNarrative" style="margin-top:10px; color:var(--muted); font-size:13px; line-height:1.65; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:12px; padding:10px;"></div>
+  </div>
+
   <div class="charts" id="charts"></div>
 
   <script>
@@ -228,12 +236,15 @@
     const tagChips = document.getElementById("tagChips");
     const statusBadge = document.getElementById("statusBadge");
     const runMeta = document.getElementById("runMeta");
+    const analysisCards = document.getElementById("analysisCards");
+    const analysisNarrative = document.getElementById("analysisNarrative");
 
     let availableTags = [];
     let runData = [];
     const highlightedTags = [
       "Environment/Cumulative Reward",
       "Environment/Episode Length",
+      "Policy/Extrinsic Reward",
       "Policy/Loss",
       "Policy/Entropy",
       "Losses/Value Loss"
@@ -243,11 +254,13 @@
     let autoTimer = null;
 
     const palette = [
-      "#0f172a", // dark ink line
-      "#0f172a",
-      "#0f172a",
-      "#0f172a",
-      "#0f172a",
+      "#0ea5e9",
+      "#f97316",
+      "#22c55e",
+      "#a855f7",
+      "#ef4444",
+      "#eab308",
+      "#14b8a6"
     ];
 
     function quantile(sortedValues, q) {
@@ -262,6 +275,22 @@
       return sortedValues[base];
     }
 
+    function linearTrend(points) {
+      if (!points || points.length < 2) return 0;
+      const xs = points.map(p => p.step);
+      const ys = points.map(p => p.value);
+      const n = xs.length;
+      const meanX = xs.reduce((a,b)=>a+b,0)/n;
+      const meanY = ys.reduce((a,b)=>a+b,0)/n;
+      let num=0, den=0;
+      for (let i=0;i<n;i++){
+        const dx = xs[i]-meanX;
+        num += dx*(ys[i]-meanY);
+        den += dx*dx;
+      }
+      return den === 0 ? 0 : num/den;
+    }
+
     function calcRange(values) {
       const finite = values.filter(Number.isFinite).sort((a, b) => a - b);
       if (!finite.length) return { min: -1, max: 1 };
@@ -274,13 +303,26 @@
 
     function describeTag(tag) {
       const map = {
-        "Environment/Cumulative Reward": "Line: average total reward per episode (up = better learning, down = worse). Fill shows recent reward band.",
-        "Environment/Episode Length": "Line: steps per episode (down = faster success or earlier failure; big spikes = slow/failed episodes). Fill shows recent spread.",
-        "Policy/Loss": "Line: policy loss (down and stable = converging; rising spikes = instability). Fill shows recent loss variance.",
-        "Policy/Entropy": "Line: exploration entropy (starts high, should trend down as policy commits; rising again can mean dithering). Fill shows recent entropy variance.",
-        "Losses/Value Loss": "Line: critic loss (down/stable = better value estimates; spikes = critic struggling). Fill shows recent critic loss spread.",
+        "Environment/Cumulative Reward": "Total reward per episode (unitless). Upward slope = improving policy; sustained drops = failing episodes or bad shaping.",
+        "Environment/Episode Length": "Number of steps per episode (steps). High = long or stuck episodes; very low = quick success or quick failure. Stable midrange is usually healthy.",
+        "Policy/Extrinsic Reward": "Extrinsic reward collected (unitless). Mirrors how well the agent is earning environment rewards; should correlate with cumulative reward.",
+        "Policy/Loss": "Policy loss (unitless). Should trend down and stabilize; large spikes indicate unstable updates or overly strong gradients.",
+        "Policy/Entropy": "Policy entropy (nats). Starts high (exploration) and should taper as the policy commits; late rises can signal dithering.",
+        "Losses/Value Loss": "Critic loss (unitless). Stable low values mean good value estimation; spikes suggest the critic is struggling to fit returns."
       };
       return map[tag] || "Scalar from training logs for this behavior.";
+    }
+
+    function yLabel(tag) {
+      const map = {
+        "Environment/Cumulative Reward": "Cumulative reward (per episode)",
+        "Environment/Episode Length": "Steps per episode",
+        "Policy/Loss": "Policy loss",
+        "Policy/Entropy": "Entropy (nats)",
+        "Losses/Value Loss": "Value loss",
+        "Policy/Extrinsic Reward": "Extrinsic reward"
+      };
+      return map[tag] || "Value";
     }
 
     function cleanValues(values) {
@@ -350,21 +392,18 @@
       }
       const labels = points.map(p => p.step);
       const values = cleanValues(points.map(p => p.value));
-      const color = palette[Object.keys(charts).indexOf(tag) % palette.length];
+      const color = palette[Object.keys(charts).length % palette.length];
       const range = calcRange(values);
       const areaPattern = (() => {
         const p = document.createElement("canvas");
-        p.width = 8;
-        p.height = 8;
+        p.width = 32;
+        p.height = 32;
         const ctx = p.getContext("2d");
-        ctx.fillStyle = "rgba(239,68,68,0.08)"; // light red fill
-        ctx.fillRect(0, 0, 8, 8);
-        ctx.strokeStyle = "rgba(239,68,68,0.25)"; // subtle red stripe
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, 8);
-        ctx.lineTo(8, 0);
-        ctx.stroke();
+        const grad = ctx.createLinearGradient(0, 0, 0, 32);
+        grad.addColorStop(0, color + "33");
+        grad.addColorStop(1, color + "08");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 32, 32);
         return ctx.createPattern(p, "repeat");
       })();
 
@@ -415,17 +454,26 @@
           scales: {
             x: {
               ticks: { color: "#334155", maxTicksLimit: 6 },
-              grid: { color: "rgba(15,23,42,0.08)" }
+              grid: { color: "rgba(15,23,42,0.08)" },
+              title: { display: true, text: "Training step", color: "#334155", font: { weight: "600" } }
             },
             y: {
               ticks: { color: "#334155" },
               grid: { color: "rgba(15,23,42,0.08)" },
               min: range.min,
               max: range.max,
+              title: { display: true, text: yLabel(tag), color: "#334155", font: { weight: "600" } }
             },
           },
           plugins: {
             legend: { display: false },
+            title: { display: true, text: describeTag(tag), align: "start", color: "#0f172a", font: { size: 12, weight: "600" } },
+            tooltip: {
+              callbacks: {
+                title: (items) => `Step ${items[0].label}`,
+                label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(4)}`
+              }
+            }
           },
         },
       });
@@ -445,6 +493,94 @@
         return;
       }
       activeTags.forEach(tag => upsertChart(tag, metrics.data[tag]));
+    }
+
+    function summarizeSeries(points) {
+      if (!points || !points.length) return null;
+      const vals = cleanValues(points.map(p => p.value));
+      if (!vals.length) return null;
+      const steps = points.map(p => p.step);
+      return {
+        last: vals[vals.length - 1],
+        best: Math.max(...vals),
+        median: quantile([...vals].sort((a,b)=>a-b), 0.5),
+        p05: quantile([...vals].sort((a,b)=>a-b), 0.05),
+        p95: quantile([...vals].sort((a,b)=>a-b), 0.95),
+        trend: linearTrend(points)
+      };
+    }
+
+    function renderAnalysis(data) {
+      analysisCards.innerHTML = "";
+      analysisNarrative.textContent = "";
+      if (!data || !data.tags?.length) {
+        analysisNarrative.textContent = "No metrics yet.";
+        return;
+      }
+      const reward = summarizeSeries(data.data["Environment/Cumulative Reward"]);
+      const length = summarizeSeries(data.data["Environment/Episode Length"]);
+      const entropy = summarizeSeries(data.data["Policy/Entropy"]);
+      const policyLoss = summarizeSeries(data.data["Policy/Loss"]);
+
+      const cards = [];
+      if (reward) {
+        cards.push({
+          title: "Cumulative Reward",
+          value: reward.last.toFixed(2),
+          detail: `best ${reward.best.toFixed(2)}, median ${reward.median.toFixed(2)}, trend ${reward.trend >=0 ? "up" : "down"} (unitless)`
+        });
+      }
+      if (length) {
+        cards.push({
+          title: "Episode Length",
+          value: length.last.toFixed(1),
+          detail: `median ${length.median.toFixed(1)}, p95 ${length.p95.toFixed(1)} (steps)`
+        });
+      }
+      if (entropy) {
+        cards.push({
+          title: "Policy Entropy",
+          value: entropy.last.toFixed(3),
+          detail: `trend ${entropy.trend >=0 ? "rising" : "falling"} (nats)`
+        });
+      }
+      if (policyLoss) {
+        cards.push({
+          title: "Policy Loss",
+          value: policyLoss.last.toFixed(3),
+          detail: `best ${policyLoss.best.toFixed(3)}, median ${policyLoss.median.toFixed(3)} (unitless)`
+        });
+      }
+
+      cards.forEach(c => {
+        const el = document.createElement("div");
+        el.className = "chart-card";
+        el.style.height = "auto";
+        el.style.minHeight = "auto";
+        el.innerHTML = `<div class="chart-title" style="color:#0f172a;"><span>${c.title}</span><span>${c.value}</span></div><div class="chart-note" style="background:#f8fafc;">${c.detail}</div>`;
+        analysisCards.appendChild(el);
+      });
+
+      const notes = [];
+      if (reward && length) {
+        if (length.last > 2000 && reward.last < 0) {
+          notes.push("Episodes are very long with negative reward \u2192 likely stalling/exploit (e.g., running away from goals).");
+        } else if (reward.trend > 0 && length.median < 600) {
+          notes.push("Reward trending up with moderate episode length \u2192 policy is converging toward stable goal crossings.");
+        }
+        if (reward.last > 200 && length.median < 400) {
+          notes.push("High reward with short-to-moderate episodes \u2192 successful back-and-forth goal collection (similar to Model 20).");
+        }
+      }
+      if (entropy && entropy.trend > 0 && reward && reward.trend < 0) {
+        notes.push("Entropy rising while reward falls \u2192 policy may be dithering; consider reducing exploration or curiosity.");
+      }
+      if (policyLoss && policyLoss.p95 > policyLoss.median * 2) {
+        notes.push("Policy loss spikes detected \u2192 instability; check learning rate or reward scale.");
+      }
+      analysisNarrative.innerHTML = notes.length
+        ? notes.map(n => `<div>${n}</div>`).join("")
+        : "No major issues detected. Watching reward slope and episode length for stability.";
     }
 
     async function loadRuns() {
@@ -490,14 +626,15 @@
       const behavior = behaviorSelect.value;
       if (!run || !behavior) return;
       try {
-        const limit = 400;
+        const limit = 2000; // maximum window for full-curve visibility
         setStatus("Updating...");
         const data = await fetchJson(`/api/metrics?run=${encodeURIComponent(run)}&behavior=${encodeURIComponent(behavior)}&limit=${limit}`);
         renderChips(data.tags || []);
         drawCharts(data);
         const lastTag = data.tags.find(t => data.data[t]?.length);
         const lastStep = lastTag ? data.data[lastTag].slice(-1)[0].step : "-";
-        runMeta.textContent = `Run ${data.run} ? Behavior ${data.behavior} ? Last step ${lastStep}`;
+        runMeta.textContent = `Run ${data.run} | Behavior ${data.behavior} | Last training step ${lastStep}`;
+        renderAnalysis(data);
         setStatus("Live");
       } catch (err) {
         console.error(err);
